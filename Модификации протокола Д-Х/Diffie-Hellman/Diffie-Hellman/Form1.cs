@@ -21,16 +21,22 @@ namespace Diffie_Hellman
 		int g;
 		int R1;
 		int R2;
-		RSA key;
-		//RSACryptoServiceProvider key = new RSACryptoServiceProvider();
-		Encoding enc = Encoding.Default;
+		int H, m, n, q, a, b, k, s, r;
+		string message;
 
 		public Form1()
 		{
 			InitializeComponent();
 		}
 
-		private void button2_Click(object sender, EventArgs e)
+		private void textBox4_TextChanged(object sender, EventArgs e)
+		{
+			abonentA.Text = textBoxG.Text;
+			abonentB.Text = textBoxG.Text;
+		}
+
+
+		private void buttonForR1_Click(object sender, EventArgs e)
 		{
 			arr1 = abonentA.Text.Split('\n');
 			string tmp = "";
@@ -41,17 +47,16 @@ namespace Diffie_Hellman
 			arr1 = tmp.Split('\r');
 
 
-			p = Int32.Parse(textBox3.Text);
+			p = Int32.Parse(textBoxP.Text);
 			g = Int32.Parse(arr1[0]);
 
 
 			x = Int32.Parse(arr1[1]);
 			R1 = Int32.Parse(Math.Pow(g, x).ToString()) % p;
-			button1_Click(sender, e);
-			abonentB.AppendText("\r\n" + R1.ToString());
+			abonentA.AppendText("\r\n" + R1.ToString());
 		}
 
-		private void button4_Click(object sender, EventArgs e)
+		private void buttonForR2_Click(object sender, EventArgs e)
 		{
 			arr2 = abonentB.Text.Split('\n');
 			string tmp = "";
@@ -63,22 +68,75 @@ namespace Diffie_Hellman
 
 			y = Int32.Parse(arr2[1]);
 			R2 = Int32.Parse(Math.Pow(g, y).ToString()) % p;
-			abonentA.AppendText("\r\n" + R2.ToString());
+			abonentB.AppendText("\r\n" + R2.ToString());
 		}
 
-		private void textBox4_TextChanged(object sender, EventArgs e)
+
+		private void buttonForEncriptA_Click(object sender, EventArgs e)
 		{
-			abonentA.Text = textBox4.Text;
-			abonentB.Text = textBox4.Text;
+			createrKyes(R1);
+			r = (Int32.Parse(Math.Pow(q, k).ToString()) % n) % m;
+			s = Foo(k, m) * (H + a * r) % m;
+			message = R1.ToString() + " " + r + " " + s;
 		}
 
-		private void button5_Click(object sender, EventArgs e)
+		private void buttonForEncriptB_Click(object sender, EventArgs e)
+		{
+			createrKyes(R2);
+			r = (Int32.Parse(Math.Pow(q, k).ToString()) % n) % m;
+			s = Foo(k, m) * (H + a * r) % m;
+			message = R2.ToString() + " " + r + " " + s;
+		}
+
+
+		private void buttonForSendToB_Click(object sender, EventArgs e)
+		{
+			textBoxForMessage.Text = message;
+		}
+
+		private void buttonForSendToA_Click(object sender, EventArgs e)
+		{
+			textBoxForMessage.Text = message;
+		}
+
+
+		private void buttonForDecriptFromA_Click(object sender, EventArgs e)
+		{
+			string[] tmp = textBoxForMessage.Text.Split(' ');
+			H = Int32.Parse(tmp[0]);
+			int w = Foo(s, m) % m;
+			int u1 = H * w % m;
+			int u2 = r * w % m;
+			double v = ((Math.Pow(q, u1)*Math.Pow(b, u2)) % n) % m;
+			if (v == r)
+				abonentB.AppendText("\r\n" + R1.ToString());
+			else
+				abonentB.AppendText("\r\n" + "Злоумышленник на линии!");
+		}
+
+		private void buttonForDecriptFromB_Click(object sender, EventArgs e)
+		{
+			string[] tmp = textBoxForMessage.Text.Split(' ');
+			H = Int32.Parse(tmp[0]);
+			int w = Foo(s, m) % m;
+			int u1 = H * w % m;
+			int u2 = r * w % m;
+			double v = ((Math.Pow(q, u1) * Math.Pow(b, u2)) % n) % m;
+			if (v == r)
+				abonentA.AppendText("\r\n" + R2.ToString());
+			else
+				abonentA.AppendText("\r\n" + "Злоумышленник на линии!");
+		}
+
+
+
+		private void buttonForKA_Click(object sender, EventArgs e)
 		{
 			int K = Int32.Parse(Math.Pow(R2, x).ToString()) % p;
 			abonentA.AppendText("\r\n" + K.ToString());
 		}
 
-		private void button6_Click(object sender, EventArgs e)
+		private void buttonForKB_Click(object sender, EventArgs e)
 		{
 			int K = Int32.Parse(Math.Pow(R1, y).ToString()) % p;
 			abonentB.AppendText("\r\n" + K.ToString());
@@ -86,21 +144,9 @@ namespace Diffie_Hellman
 
 
 
-		int H, m, n, q, a, b, k;
-
-		private void button10_Click(object sender, EventArgs e)
+		private void createrKyes(int tmp)
 		{
-
-		}
-
-		private void button8_Click(object sender, EventArgs e)
-		{
-
-		}
-
-		private void createrKyes()
-		{
-			H = 9;
+			H = tmp.GetHashCode();
 			m = 11;
 			n = 23;
 			q = Int32.Parse(Math.Pow(2, ((n - 1) / m)).ToString()) % n;
@@ -109,24 +155,6 @@ namespace Diffie_Hellman
 
 			k = 3;
 		}
-
-		private void button1_Click(object sender, EventArgs e)
-		{
-			//int l = byte.Parse(R1.ToString()).ToString().Length;
-			createrKyes();
-			int r = (Int32.Parse(Math.Pow(q, k).ToString()) % n) % m;
-			int s = Foo(k, m) * (H + a * r) % m;
-			textBox1.Text = R1.ToString() + " " + r + " " + s;
-		}
-
-		private void button7_Click(object sender, EventArgs e)
-		{
-			createrKyes();
-			int d = Foo(k, m);
-			abonentB.AppendText("\r\n" + (Foo(k, m) * (H + a * ((Int32.Parse(Math.Pow(q, k).ToString()) % n) % m)) % m).ToString());
-
-		}
-
 
 		private static int Foo(int a, int m)
 		{
